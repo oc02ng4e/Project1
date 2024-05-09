@@ -380,7 +380,11 @@ BOOL ConvertEnvVariables(LPTSTR lpFileName, DWORD nMaxPathLength)
             dwAmountWritten += DestLen;
 
             dwPrevIndex = (EndOfVar - lpFileName) + 1;
-            StartOfVar = EndOfVar + 1;
+            StartOfVar = _tcschr(EndOfVar + 1, DELIM);
+            if (StartOfVar == NULL)
+            {
+                break;
+            }
 
             EndOfVar = _tcschr(StartOfVar, DELIM);
         }

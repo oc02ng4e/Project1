@@ -148,6 +148,11 @@ BOOL ResolveClosestPath(LPCTSTR lpFileName, DWORD dwOriginalPathLength, LPTSTR l
             free(TmpPath);
             return FALSE;
         }
+        
+        if (IsDrive)
+        {
+            CurrentIndex++;
+        }
 
         _tcsncpy_s(&lpLongFileName[AmountWritten], dwMaxLength - AmountWritten, &lpFileName[CurrentIndex], dwOriginalPathLength - CurrentIndex);
 
