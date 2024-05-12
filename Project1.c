@@ -618,7 +618,6 @@ BOOL ValidHardLink(LPCTSTR lpPath)
         return FALSE;
     }
 
-
     TCHAR FormatedPath[MAX_SUPPORTED_PATH] = { TEXT('\0') };
     FileLength = MAX_SUPPORTED_PATH;
 
@@ -658,7 +657,7 @@ BOOL IsPathValid(LPCTSTR lpPath)
 {
     if (lpPath == NULL)
     {
-        _tprintf_s(TEXT("invalid params"));
+        _tprintf_s(TEXT("invalid params\n"));
         return FALSE;
     }
 
@@ -684,7 +683,6 @@ BOOL IsPathValid(LPCTSTR lpPath)
         CloseHandle(EvilHandle);
 
         return FALSE;
-
     }
 
     DWORD dwMaxLength = _tcslen(lpPath);
@@ -695,7 +693,7 @@ BOOL IsPathValid(LPCTSTR lpPath)
     }
 
     // iterate over lpPath from end to start
-    LPTSTR CurrentSection = lpPath[dwMaxLength-1];
+    LPTSTR CurrentSection = lpPath[dwMaxLength - 1];
     DWORD CurrentIndex = dwMaxLength;
 
     BOOL IsDrive = FALSE;
@@ -743,9 +741,8 @@ BOOL IsPathValid(LPCTSTR lpPath)
                 PrintWindowsError(GetLastError());
                 CloseHandle(CurrentHandle);
                 CloseHandle(EvilHandle);
-
+                free(TmpPath);
                 return FALSE;
-
             }
 
             CloseHandle(CurrentHandle);
