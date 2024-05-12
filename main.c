@@ -45,6 +45,16 @@ int _tmain(int argc, wchar_t* argv[])
     {
         TCHAR FilePath[MAX_SUPPORTED_PATH] = { '\0' };
 
+        if (!CreateDirectory(BAD_PATH, NULL))
+        {
+            DWORD dwError = GetLastError();
+            if (dwError != ERROR_ALREADY_EXISTS)
+            {
+                PrintWindowsError(dwError);
+                break;
+            }
+        }
+
         if (!GetFilePath(FilePath, MAX_SUPPORTED_PATH))
         {
             continue;
