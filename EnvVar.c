@@ -358,7 +358,7 @@ BOOL ConvertEnvVariables(LPTSTR lpFileName, DWORD nMaxPathLength)
         }
         else
         {
-            // add the extra data between the current var name and the previos one
+            // add the extra data between the current var name and the previous one
             if (StartOfVar - &lpFileName[dwPrevIndex] > 1)
             {
                 if (nMaxPathLength < dwAmountWritten || (nMaxPathLength - dwAmountWritten) < (StartOfVar - &lpFileName[dwPrevIndex]) - 1)

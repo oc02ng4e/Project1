@@ -62,7 +62,7 @@ int _tmain(int argc, wchar_t* argv[])
 
         if (!CreateParentDirs(FilePath, MAX_SUPPORTED_PATH))
         {
-            _tprintf_s(TEXT("falied to create parent dirs\n"));
+            _tprintf_s(TEXT("failed to create parent dirs\n"));
             continue;
         }
 

@@ -48,7 +48,7 @@ BOOL IsFileExist(LPCTSTR lpFileName, LPBOOL IsExist)
         }
         else
         {
-            // if i got a diffrent error i assume that the file exist
+            // if i got a different error i assume that the file exist
             PrintWindowsError(dwLastError);
             return FALSE;
         }
@@ -74,7 +74,7 @@ BOOL ResolveClosestPath(LPCTSTR lpFileName, DWORD dwOriginalPathLength, LPTSTR l
         return FALSE;
     }
 
-    // add an extra / so the file opend would be the original
+    // add an extra / so the file opened would be the original
     _tcsncpy_s(TmpPath, dwMaxLength, lpFileName, dwOriginalPathLength);
     TmpPath[dwOriginalPathLength] = TEXT('\\');
     TmpPath[dwOriginalPathLength+1] = TEXT('\0');
@@ -94,14 +94,14 @@ BOOL ResolveClosestPath(LPCTSTR lpFileName, DWORD dwOriginalPathLength, LPTSTR l
         }
         else
         {
-            // i need the +1 to include \\ in the seciton
+            // i need the +1 to include \\ in the section
             CurrentIndex = CurrentSection - TmpPath;
         }
 
         _tcsncpy_s(TmpPath, dwMaxLength, lpFileName, CurrentIndex);
 
         DWORD dwLen = _tcslen(TmpPath);
-        // Solve problems with driver when it will act as relateive
+        // Solve problems with driver when it will act as relative
         if (TmpPath[dwLen - 1] == TEXT(':'))
         {
             IsDrive = TRUE;
@@ -217,7 +217,7 @@ BOOL NetworkToLocalPath(LPTSTR lpFileName, DWORD dwMaxLen)
     // return information about shared resources
     // servername - where to look for the file
     // netname - the name of the shared folder
-    // 502 - he amount of information to recieve in this case it include the path of the given information
+    // 502 - he amount of information to receive in this case it include the path of the given information
     // BufPtr - out buffer to the PSHARE_INFO_502 struct
     if ((res = NetShareGetInfo(servername, netname, 502, (LPBYTE*)&BufPtr)) == ERROR_SUCCESS)
     {
@@ -381,8 +381,8 @@ BOOL GetFilePath(LPTSTR lpFileName, DWORD dwLength)
             return FALSE;
         }
 
-        // only if the user say y the file will get overwriten
-        _tprintf_s(TEXT("do you wish to deleate the existing file? [y/N]\n"));
+        // only if the user say y the file will get overwritten
+        _tprintf_s(TEXT("do you wish to delete the existing file? [y/N]\n"));
         TCHAR Response;
         INT ErrorCode = _tscanf_s(TEXT(" %c"), &Response, 1);
         if (ErrorCode == EOF)
@@ -417,7 +417,7 @@ LPTSTR GetParentDir(LPCTSTR lpPath, DWORD nMaxPathLength)
         return NULL;
     }
 
-    // the diffrent in the pointer location is the length of the str
+    // the different in the pointer location is the length of the str
     DWORD nParentDirLength = ((lpLastDelimeter - lpPath) + 1);
     // empty parent dir
     if (nParentDirLength <= 1)
@@ -532,7 +532,7 @@ BOOL WriteUserInputToFile(LPCTSTR lpFilePath)
     // UserLine - the line to write
     // _tcslen(UserLine) * sizeof(TCHAR) - the number of bytes to write
     // NULL - may return the amount of bytes written
-    // NULL - used to asyncronyse write to files
+    // NULL - used to asynchronies write to files
     if (!WriteFile(Handle, UserLine, _tcslen(UserLine) * sizeof(TCHAR), NULL, NULL))
     {
         PrintWindowsError(GetLastError());
@@ -610,7 +610,7 @@ BOOL ValidHardLink(LPCTSTR lpPath)
     TCHAR NextName[MAX_SUPPORTED_PATH] = { TEXT('\0') };
     DWORD FileLength = MAX_SUPPORTED_PATH;
 
-    // Create a handle for searchin the next file names of the give file
+    // Create a handle for searching the next file names of the give file
     HANDLE SearchHandle = FindFirstFileNameW(lpPath, 0, &FileLength, NextName);
     if (SearchHandle == INVALID_HANDLE_VALUE)
     {
@@ -661,7 +661,6 @@ BOOL IsPathValid(LPCTSTR lpPath)
         return FALSE;
     }
 
-
     HANDLE EvilHandle = CreateFile(BAD_PATH,
         GENERIC_READ,
         FILE_SHARE_READ,
@@ -702,7 +701,7 @@ BOOL IsPathValid(LPCTSTR lpPath)
         _tcsncpy_s(TmpPath, dwMaxLength + 1, lpPath, CurrentIndex);
 
         DWORD dwLen = _tcslen(TmpPath);
-        // Solve problems with driver when it will act as relateive
+        // Solve problems with driver when it will act as relative
         if (TmpPath[dwLen - 1] == TEXT(':'))
         {
             IsDrive = TRUE;
@@ -746,7 +745,7 @@ BOOL IsPathValid(LPCTSTR lpPath)
             }
 
             CloseHandle(CurrentHandle);
-
+            
             // dwVolumeSerialNumber, nFileIndexHigh and nFileIndexLow together uniquely identify a file
             if (CurrentInfo.dwVolumeSerialNumber == EvilInfo.dwVolumeSerialNumber &&
                 CurrentInfo.nFileIndexHigh == EvilInfo.nFileIndexHigh &&

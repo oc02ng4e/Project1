@@ -20,7 +20,7 @@
 #define USER_AGREEMENT TEXT('y')
 
 
-// Define the RtlDosPathNameToNtPathName_U_WithStatus which is recieved form ntdll.dll in order to convert dos path to dos path
+// Define the RtlDosPathNameToNtPathName_U_WithStatus which is received form ntdll.dll in order to convert dos path to dos path
 typedef NTSTATUS(__cdecl* DOS_TO_NT)(PCWSTR DosFileName, PUNICODE_STRING NtFileName, PWSTR* FilePart, PVOID Reserved);
 
 DOS_TO_NT RtlDosPathNameToNtPathName_U_WithStatus;
@@ -41,24 +41,24 @@ BOOL GetUserInput(LPTSTR lpUserInput, DWORD dwLength);
 * @param [in] lpFileName - path to the file
 * @param [out] IsExist - return if the file already exists
 * 
-* @ Note if it failes to check it will assume that the file exist
+* @ Note if it fails to check it will assume that the file exist
 */
 BOOL IsFileExist(LPCTSTR lpFileName, LPBOOL IsExist);
 
 /**
-* @brief frsolve the existing path
+* @brief resolve the existing path
 *
 * @param [in] lpFileName - original file name
 * @param [in] dwOriginalPathLength - the length of the original path
 * @param [out] lpLongFileName - the long file path
 * @param [in] dwMaxLength - the max length of the buffer
 * 
-* @ Note if it failes to check it will assume that the file exist
+* @ Note if it fails to check it will assume that the file exist
 */
 BOOL ResolveClosestPath(LPCTSTR lpFileName, DWORD dwOriginalPathLength, LPTSTR lpLongFileName, DWORD dwMaxLength);
 
 /**
-* @brief find the destination of the ggiven network path and rename the path
+* @brief find the destination of the given network path and rename the path
 *
 * @param [in, out] lpFileName - the network path to format
 * @param [in] nLength - the maximum length lpFileName can hold 
@@ -134,7 +134,7 @@ BOOL PrintFromFile(LPCTSTR lpFilePath);
 BOOL ValidHardLink(LPCTSTR lpPath);
 
 /**
-* @brief validate that it ok to writre to the given path
+* @brief validate that it ok to writer to the given path
 *
 * @param [in] lpPath - path to check
 */

@@ -36,14 +36,14 @@ INT FormatDate(TCHAR* lpDate, DWORD BufferSize, LPSYSTEMTIME dt);
 LPTSTR GetDateString(VOID);
 
 /*
-* @brief return the value of the given enviorment variable from the system/user table
+* @brief return the value of the given environment variable from the system/user table
 *
 * @param [in] varName - the variable to get
 */
 LPTSTR GetEnvVar(LPCTSTR varName);
 
 /*
-* @brief return the value of the given env var from the spaciel list of from the system/user table
+* @brief return the value of the given env var from the special list of from the system/user table
 *
 * @param [in] varName - the variable to get
 */
@@ -60,7 +60,7 @@ LPCTSTR GetEnvVarOrSpecial(LPCTSTR varName);
 BOOL SubstituteVar(PCTSTR Src, PTCHAR Dest, PTCHAR DestEnd, size_t* DestIncLen);
 
 /*
-* @brief extruct all the enviorment variables in the given strin
+* @brief extract all the environment variables in the given string
 *
 * @param [in, out] lpFileName - the file path to transform
 * @param [in] nMaxPathLength - the maximum size of lpFileName
