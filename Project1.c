@@ -322,11 +322,11 @@ BOOL GetFilePath(LPTSTR lpFileName, DWORD dwLength)
             return FALSE;
         }
 
-        UNICODE_STRING str;
+        UNICODE_STRING str = { 0 };
         NTSTATUS status = (RtlDosPathNameToNtPathName_U_WithStatus)(lpFileName, &str, NULL, 0);
         if (status != 0)
         {
-            _tprintf_s(TEXT("failed to get nt path with sttaus: %d"), status);
+            _tprintf_s(TEXT("failed to get nt path with status: %d\n"), status);
             return FALSE;
         }
 
@@ -662,35 +662,109 @@ BOOL IsPathValid(LPCTSTR lpPath)
         return FALSE;
     }
 
-    if (_tcslen(lpPath) < _tcslen(BAD_PATH))
+
+    HANDLE EvilHandle = CreateFile(BAD_PATH,
+        GENERIC_READ,
+        FILE_SHARE_READ,
+        NULL,
+        OPEN_EXISTING,
+        FILE_FLAG_BACKUP_SEMANTICS,
+        NULL);
+
+    if (EvilHandle == INVALID_HANDLE_VALUE)
     {
-        return TRUE;
+        PrintWindowsError(GetLastError());
+        return FALSE;
+    }
+    
+    BY_HANDLE_FILE_INFORMATION EvilInfo = { 0 };
+    if (!GetFileInformationByHandle(EvilHandle, &EvilInfo))
+    {
+        PrintWindowsError(GetLastError());
+        CloseHandle(EvilHandle);
+
+        return FALSE;
+
     }
 
-    TCHAR TmpPath[MAX_SUPPORTED_PATH] = { TEXT('\0') };
-
-    _tcsncpy_s(TmpPath, MAX_SUPPORTED_PATH, lpPath, _tcslen(lpPath));
-
-    if (_tcslen(TmpPath) > 4)
-    {
-        // remove unnecerry \\? and \\.
-        if (TmpPath[0] == TEXT('\\') && TmpPath[1] == TEXT('\\') && (TmpPath[2] == TEXT('?') || TmpPath[2] == TEXT('.')))
-        {
-            memmove_s(TmpPath, MAX_SUPPORTED_PATH - 4, TmpPath + 4, _tcslen(TmpPath) );
-        }
-
-        // remove UNC and add the missing /
-        if (TmpPath[0] == TEXT('U') && TmpPath[1] == TEXT('N') && TmpPath[2] == TEXT('C'))
-        {
-            memmove_s(TmpPath, MAX_SUPPORTED_PATH - 2, TmpPath + 2, _tcslen(TmpPath));
-            TmpPath[0] = TEXT('\\');
-        }
-    }
-
-    if (_tcsncmp(TmpPath, BAD_PATH, _tcslen(BAD_PATH)) == 0)
+    DWORD dwMaxLength = _tcslen(lpPath);
+    TCHAR* TmpPath = (TCHAR*)malloc((dwMaxLength + 1) * sizeof(TCHAR));
+    if (TmpPath == NULL)
     {
         return FALSE;
     }
 
+    // iterate over lpPath from end to start
+    LPTSTR CurrentSection = lpPath[dwMaxLength-1];
+    DWORD CurrentIndex = dwMaxLength;
+
+    BOOL IsDrive = FALSE;
+    while (CurrentSection != NULL && !IsDrive)
+    {
+        _tcsncpy_s(TmpPath, dwMaxLength + 1, lpPath, CurrentIndex);
+
+        DWORD dwLen = _tcslen(TmpPath);
+        // Solve problems with driver when it will act as relateive
+        if (TmpPath[dwLen - 1] == TEXT(':'))
+        {
+            IsDrive = TRUE;
+            TmpPath[dwLen] = TEXT('\\');
+            dwLen++;
+            TmpPath[dwLen] = TEXT('\0');
+        }
+
+        HANDLE CurrentHandle = CreateFile(TmpPath,
+            GENERIC_READ,
+            FILE_SHARE_READ,
+            NULL,
+            OPEN_EXISTING,
+            FILE_FLAG_BACKUP_SEMANTICS,
+            NULL);
+
+        if (CurrentHandle == INVALID_HANDLE_VALUE)
+        {
+            DWORD dwLastError = GetLastError();
+            if (dwLastError == ERROR_FILE_NOT_FOUND || dwLastError == ERROR_PATH_NOT_FOUND || dwLastError == ERROR_BAD_FORMAT)
+            {
+                // continue the run in this case 
+            }
+            else
+            {
+                PrintWindowsError(GetLastError());
+                free(TmpPath);
+                return FALSE;
+            }
+        }
+        else
+        {
+            BY_HANDLE_FILE_INFORMATION CurrentInfo = { 0 };
+            if (!GetFileInformationByHandle(CurrentHandle, &CurrentInfo))
+            {
+                PrintWindowsError(GetLastError());
+                CloseHandle(CurrentHandle);
+                CloseHandle(EvilHandle);
+
+                return FALSE;
+
+            }
+
+            CloseHandle(CurrentHandle);
+
+            // dwVolumeSerialNumber, nFileIndexHigh and nFileIndexLow together uniquely identify a file
+            if (CurrentInfo.dwVolumeSerialNumber == EvilInfo.dwVolumeSerialNumber &&
+                CurrentInfo.nFileIndexHigh == EvilInfo.nFileIndexHigh &&
+                CurrentInfo.nFileIndexLow == EvilInfo.nFileIndexLow)
+            {
+                CloseHandle(EvilHandle);
+                free(TmpPath);
+                return FALSE;
+            }
+        }
+        
+        CurrentSection = _tcsrchr(TmpPath, TEXT('\\'));
+        CurrentIndex = (CurrentSection - TmpPath);
+    }
+
+    free(TmpPath);
     return TRUE;
 }
