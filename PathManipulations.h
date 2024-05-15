@@ -8,7 +8,7 @@
 
 #include "Utils.h" 
 
-// Define the RtlDosPathNameToNtPathName_U_WithStatus which is received form ntdll.dll in order to convert dos path to dos path
+// Load the RtlDosPathNameToNtPathName_U_WithStatus which is received form ntdll.dll in order to convert dos path to dos path
 typedef NTSTATUS(__cdecl* DOS_TO_NT)(PCWSTR DosFileName, PUNICODE_STRING NtFileName, PWSTR* FilePart, PVOID Reserved);
 
 DOS_TO_NT RtlDosPathNameToNtPathName_U_WithStatus;

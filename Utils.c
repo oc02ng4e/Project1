@@ -25,7 +25,6 @@ VOID PrintWindowsError(DWORD dwError)
     _tprintf_s(TEXT("%s\n"), buffer);
 }
 
-
 BOOL GetUserInput(LPTSTR lpUserInput, DWORD dwLength)
 {
     if (lpUserInput == NULL || dwLength <= 1)
