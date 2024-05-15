@@ -1,293 +1,5 @@
 #include "Project1.h"
 
-BOOL GetUserInput(LPTSTR lpUserInput, DWORD dwLength)
-{
-    if (lpUserInput == NULL || dwLength <= 1)
-    {
-        _tprintf(TEXT("invalid params\n"));
-        return FALSE;
-    }
-
-    // get rid of \n at the start of the buffer
-    do {
-        if (!_fgetts(lpUserInput, dwLength, stdin))
-        {
-            perror("failed to get user input");
-            return FALSE;
-        }
-    } while (lpUserInput[0] == TEXT('\n'));
-
-    // _fgetts places \n\0 at the end
-    DWORD UserInputLength = _tcslen(lpUserInput);
-    if (lpUserInput[UserInputLength - 1] == TEXT('\n'))
-    {
-        lpUserInput[UserInputLength - 1] = TEXT('\0');
-    }
-
-    return TRUE;
-}
-
-BOOL IsFileExist(LPCTSTR lpFileName, LPBOOL IsExist)
-{
-    if (lpFileName == NULL || IsExist == NULL)
-    {
-        _tprintf_s(TEXT("invalid params\n"));
-        return FALSE;
-    }
-
-    // Get information on a specific file, in this case if i use it to understand if the file exist or not
-    // lpFileName - path to the wanted file
-    DWORD dwFileAttribute = GetFileAttributes(lpFileName);
-    if (dwFileAttribute == INVALID_FILE_ATTRIBUTES)
-    {
-        DWORD dwLastError = GetLastError();
-        if (dwLastError == ERROR_FILE_NOT_FOUND || dwLastError == ERROR_PATH_NOT_FOUND)
-        {
-            *IsExist = FALSE;
-            return TRUE;
-        }
-        else
-        {
-            // if i got a different error i assume that the file exist
-            PrintWindowsError(dwLastError);
-            return FALSE;
-        }
-    }
-
-    *IsExist = TRUE;
-    return TRUE;
-}
-
-BOOL ResolveClosestPath(LPCTSTR lpFileName, DWORD dwOriginalPathLength, LPTSTR lpLongFileName, DWORD dwMaxLength)
-{
-    if (lpFileName == NULL || dwOriginalPathLength < 1 || lpLongFileName == NULL || dwMaxLength < 4 || dwOriginalPathLength > dwMaxLength)
-    {
-        _tprintf_s(TEXT("invalid params\n"));
-        return FALSE;
-    }
-
-    memset(lpLongFileName, dwMaxLength * sizeof(TCHAR), 0);
-
-    TCHAR* TmpPath = (TCHAR*)malloc((dwMaxLength + 1) * sizeof(TCHAR));
-    if (TmpPath == NULL)
-    {
-        return FALSE;
-    }
-
-    // add an extra / so the file opened would be the original
-    _tcsncpy_s(TmpPath, dwMaxLength, lpFileName, dwOriginalPathLength);
-    TmpPath[dwOriginalPathLength] = TEXT('\\');
-    TmpPath[dwOriginalPathLength+1] = TEXT('\0');
-
-    DWORD CurrentIndex = dwOriginalPathLength;
-
-    BOOL IsDrive = FALSE;
-    while (CurrentIndex > 0)
-    {
-        memset(lpLongFileName, dwMaxLength * sizeof(TCHAR), 0);
-
-        // Save the last index in case there are no more \\ so i can copy the rest of the str
-        LPTSTR CurrentSection = _tcsrchr(TmpPath, TEXT('\\'));
-        if (CurrentSection == NULL)
-        {
-            CurrentIndex = dwOriginalPathLength;
-        }
-        else
-        {
-            // i need the +1 to include \\ in the section
-            CurrentIndex = CurrentSection - TmpPath;
-        }
-
-        _tcsncpy_s(TmpPath, dwMaxLength, lpFileName, CurrentIndex);
-
-        DWORD dwLen = _tcslen(TmpPath);
-        // Solve problems with driver when it will act as relative
-        if (TmpPath[dwLen - 1] == TEXT(':'))
-        {
-            IsDrive = TRUE;
-            TmpPath[dwLen] = TEXT('\\');
-            dwLen++;
-            TmpPath[dwLen] = TEXT('\0');
-        }
-
-        HANDLE Handle = CreateFile(TmpPath,
-            GENERIC_READ,
-            FILE_SHARE_READ,
-            NULL,
-            OPEN_EXISTING,
-            FILE_FLAG_BACKUP_SEMANTICS,
-            NULL);
-
-        if (Handle == INVALID_HANDLE_VALUE)
-        {
-            DWORD dwLastError = GetLastError();
-            if (dwLastError == ERROR_FILE_NOT_FOUND || dwLastError == ERROR_PATH_NOT_FOUND)
-            {
-                if (IsDrive)
-                {
-                    _tprintf(TEXT("Drive dont exist\n"));
-                    return FALSE;
-                }
-
-                continue;
-            }
-            else
-            {
-                PrintWindowsError(GetLastError());
-                free(TmpPath);
-                return FALSE;
-            }
-        }
-
-        // Find the final location of the file/directory opend
-        DWORD AmountWritten = GetFinalPathNameByHandle(Handle, lpLongFileName, MAX_SUPPORTED_PATH, FILE_NAME_NORMALIZED);
-        if (!AmountWritten)
-        {
-            PrintWindowsError(GetLastError());
-            CloseHandle(Handle);
-            free(TmpPath);
-            return FALSE;
-        }
-        
-        if (IsDrive)
-        {
-            CurrentIndex++;
-        }
-
-        _tcsncpy_s(&lpLongFileName[AmountWritten], dwMaxLength - AmountWritten, &lpFileName[CurrentIndex], dwOriginalPathLength - CurrentIndex);
-
-        CloseHandle(Handle);
-        break;
-    }
-
-    free(TmpPath);
-    return TRUE;
-}
-
-BOOL NetworkToLocalPath(LPTSTR lpFileName, DWORD dwMaxLen)
-{
-    if (lpFileName == NULL)
-    {
-        _tprintf_s(TEXT("invalid params\n"));
-        return FALSE;
-    }
-
-
-    PSHARE_INFO_502  BufPtr;
-    NET_API_STATUS   res = 0;
-    TCHAR servername[MAX_SUPPORTED_PATH] = { 0 };
-    TCHAR netname[MAX_SUPPORTED_PATH] = { 0 };
-    
-    // set index after the prefix//
-    size_t start_index = 2;
-    if (_tcsncmp(lpFileName, TEXT("\\\\\\?\\UNC\\"), _tcslen(TEXT("\\\\\\?\\UNC\\"))))
-    {
-        start_index = _tcslen(TEXT("\\\\\\?\\UNC\\")) - 1;
-    }
-
-    LPTSTR ServerSection = _tcschr(&lpFileName[start_index], TEXT('\\'));
-    if (ServerSection == NULL)
-    {
-        _tprintf_s(TEXT("invalid params\n"));
-        return FALSE;
-    }
-
-    // skip the // at the start
-    _tcsncpy_s(servername, MAX_SUPPORTED_PATH, &lpFileName[start_index], ServerSection - &lpFileName[start_index]);
-    // skip the /
-    ServerSection++;
-
-    LPTSTR NetnameSection = _tcschr(ServerSection, TEXT('\\'));
-    if (NetnameSection == NULL)
-    {
-        _tcsncpy_s(netname, MAX_SUPPORTED_PATH, ServerSection, _tcslen(ServerSection));
-    }
-    else
-    {
-        _tcsncpy_s(netname, MAX_SUPPORTED_PATH, ServerSection, NetnameSection - ServerSection);
-    }
-
-    TCHAR* TmpPath = (TCHAR*)malloc(dwMaxLen * sizeof(TCHAR));
-    if (TmpPath == NULL)
-    {
-        _tprintf_s(TEXT("no memory\n"));
-        return FALSE;
-    }
-
-    // return information about shared resources
-    // servername - where to look for the file
-    // netname - the name of the shared folder
-    // 502 - he amount of information to receive in this case it include the path of the given information
-    // BufPtr - out buffer to the PSHARE_INFO_502 struct
-    if ((res = NetShareGetInfo(servername, netname, 502, (LPBYTE*)&BufPtr)) == ERROR_SUCCESS)
-    {
-        DWORD DestLen = _tcslen(BufPtr->shi502_path);
-        if (DestLen > dwMaxLen)
-        {
-            _tprintf_s(TEXT("buffer to small"));
-            free(TmpPath);
-            return FALSE;
-        }
-        
-        // remove the \\ at the end of the path if it exist(exist only in case of root drive
-        _tcsncpy_s(TmpPath, dwMaxLen, BufPtr->shi502_path, DestLen);
-        if (TmpPath[DestLen - 1] == TEXT('\\'))
-        {
-            DestLen--;
-        }
-
-        if (NetnameSection != NULL)
-        {
-            _tcsncpy_s(&TmpPath[DestLen], dwMaxLen - DestLen, NetnameSection, _tcslen(NetnameSection));
-        }
-
-        NetApiBufferFree(BufPtr);
-    }
-    else
-    {
-        _tprintf_s(TEXT("failed to get network information"));
-        free(TmpPath);
-        return FALSE;
-    }
-
-    _tcscpy_s(lpFileName, dwMaxLen, TmpPath);
-    free(TmpPath);
-
-    return TRUE;
-}
-
-BOOL FormatNetworkPath(LPTSTR lpFileName, LPTSTR lpServerPath, DWORD dwLength)
-{
-    if (lpFileName == NULL || dwLength <= 1)
-    {
-        _tprintf_s(TEXT("invalid params\n"));
-        return FALSE;
-    }
-
-    memset(lpServerPath, 0, sizeof(TCHAR) * dwLength);
-    _tcscpy_s(lpServerPath, dwLength, lpFileName);
-        
-    if (!NetworkToLocalPath(lpServerPath, dwLength))
-    {
-        _tprintf_s(TEXT("invalid network path\n"));
-        return FALSE;
-    }
-
-    if (_tcslwr_s(lpFileName, dwLength) != 0)
-    {
-        _tprintf_s(TEXT("failed to convert to lower\n"));
-        return FALSE;
-    }
-
-    if (_tcslwr_s(lpServerPath, dwLength) != 0)
-    {
-        _tprintf_s(TEXT("failed to convert to lower\n"));
-        return FALSE;
-    }
-
-    return TRUE;
-}
-
 BOOL GetFilePath(LPTSTR lpFileName, DWORD dwLength)
 {
     if (RtlDosPathNameToNtPathName_U_WithStatus == NULL)
@@ -316,6 +28,7 @@ BOOL GetFilePath(LPTSTR lpFileName, DWORD dwLength)
             return FALSE;
         }
         
+        // Resolve the env variables in the path
         if (!ConvertEnvVariables(lpFileName, MAX_SUPPORTED_PATH))
         {
             _tprintf_s(TEXT("failed to convert env variables\n"));
@@ -323,6 +36,7 @@ BOOL GetFilePath(LPTSTR lpFileName, DWORD dwLength)
         }
 
         UNICODE_STRING str = { 0 };
+        // Find The full path and convert to nt path
         NTSTATUS status = (RtlDosPathNameToNtPathName_U_WithStatus)(lpFileName, &str, NULL, 0);
         if (status != 0)
         {
@@ -334,6 +48,8 @@ BOOL GetFilePath(LPTSTR lpFileName, DWORD dwLength)
         _tcscpy_s(FormatedPath, MAX_SUPPORTED_PATH, str.Buffer);
         
         RtlFreeUnicodeString(&str);
+
+        // Remove long pathes/ symlink/juncitons
         if (!ResolveClosestPath(FormatedPath, dwFormattedLength, lpFileName, dwLength))
         {
             return FALSE;
@@ -341,6 +57,7 @@ BOOL GetFilePath(LPTSTR lpFileName, DWORD dwLength)
 
         if (PathIsNetworkPath(lpFileName))
         {
+            // Find the local location of the network path
             if (!FormatNetworkPath(lpFileName, FormatedPath, dwLength))
             {
                 return FALSE;
@@ -357,7 +74,8 @@ BOOL GetFilePath(LPTSTR lpFileName, DWORD dwLength)
 
             PathToValidate = lpFileName;
         }
-
+        
+        // Check if the path is not inside BAD_PATH
         if (!IsPathValid(PathToValidate))
         {
             _tprintf_s(TEXT("invalid path\n"));
@@ -375,6 +93,7 @@ BOOL GetFilePath(LPTSTR lpFileName, DWORD dwLength)
             break;
         }
 
+        // Check if there is no hard link into BAD_PATH
         if (!ValidHardLink(PathToValidate))
         {
             _tprintf_s(TEXT("invalid path\n"));
@@ -398,93 +117,6 @@ BOOL GetFilePath(LPTSTR lpFileName, DWORD dwLength)
     }
 
     return TRUE;
-}
-
-LPTSTR GetParentDir(LPCTSTR lpPath, DWORD nMaxPathLength)
-{
-    if (lpPath == NULL || nMaxPathLength <= 1 )
-    {
-        _tprintf_s(TEXT("invalid params\n"));
-        return NULL;
-    }
-
-    DWORD nPathLen = _tcslen(lpPath);
-
-    LPCTSTR lpLastDelimeter = _tcsrchr(lpPath, TEXT('\\'));
-    // no parent dir
-    if (lpLastDelimeter == NULL)
-    {
-        return NULL;
-    }
-
-    // the different in the pointer location is the length of the str
-    DWORD nParentDirLength = ((lpLastDelimeter - lpPath) + 1);
-    // empty parent dir
-    if (nParentDirLength <= 1)
-    {
-        return NULL;
-    }
-
-    LPTSTR lpParentDir = (TCHAR*)malloc(nParentDirLength * sizeof(TCHAR));
-    if (lpParentDir == NULL)
-    {
-        _tprintf_s(TEXT("no memory\n"));
-        return NULL;
-    }
-
-    _tcsncpy_s(lpParentDir, nParentDirLength, lpPath, nParentDirLength - 1);
-    lpParentDir[nParentDirLength - 1] = TEXT('\0');
-    return lpParentDir;
-}
-
-BOOL CreateParentDirs(LPCTSTR lpPath, DWORD nMaxPathLength)
-{
-    if (lpPath == NULL || nMaxPathLength <= 1)
-    {
-        _tprintf_s(TEXT("invalid params\n"));
-        return FALSE;
-    }
-
-    LPTSTR lpParentDir = GetParentDir(lpPath, nMaxPathLength);
-    // there is no parent dir
-    if (lpParentDir == NULL)
-    {
-        return TRUE;
-    }
-
-    BOOL RetVal = TRUE;
-    // Try to create the parent dir
-    // lpParentDir - path to the directory
-    // NULL - security information for the file NULL sets it to default
-    if (!CreateDirectory(lpParentDir, NULL))
-    {
-        // in case the parents dir parents dir dont exist create it first
-        DWORD nLastError = GetLastError();
-        if (nLastError == ERROR_PATH_NOT_FOUND)
-        {
-            RetVal = CreateParentDirs(lpParentDir, nMaxPathLength);
-            if (RetVal)
-            {
-                if (!CreateDirectory(lpParentDir, NULL))
-                {
-                    PrintWindowsError(GetLastError());
-                    RetVal = FALSE;
-                }
-            }
-        }
-        else if (nLastError == ERROR_ALREADY_EXISTS || nLastError == ERROR_ACCESS_DENIED)
-        {
-            RetVal = TRUE;
-        }
-        else
-        {
-            PrintWindowsError(GetLastError());
-            RetVal = FALSE;
-        }
-    }
-
-    free(lpParentDir);
-    return RetVal;
 }
 
 BOOL WriteUserInputToFile(LPCTSTR lpFilePath)
@@ -633,11 +265,14 @@ BOOL ValidHardLink(LPCTSTR lpPath)
             return FALSE;
         }
 
+        // Checks for each of the file names if it is valid
         if (!IsPathValid(FormatedPath))
         {
             FindClose(SearchHandle);
             return FALSE;
         }
+
+        // reset the FileLength input param
         FileLength = MAX_SUPPORTED_PATH;
     }
 
@@ -696,6 +331,7 @@ BOOL IsPathValid(LPCTSTR lpPath)
     DWORD CurrentIndex = dwMaxLength;
 
     BOOL IsDrive = FALSE;
+    // Iterate over the given path and checks if any of the directorys are BAD_PATH
     while (CurrentSection != NULL && !IsDrive)
     {
         _tcsncpy_s(TmpPath, dwMaxLength + 1, lpPath, CurrentIndex);
@@ -721,13 +357,10 @@ BOOL IsPathValid(LPCTSTR lpPath)
         if (CurrentHandle == INVALID_HANDLE_VALUE)
         {
             DWORD dwLastError = GetLastError();
-            if (dwLastError == ERROR_FILE_NOT_FOUND || dwLastError == ERROR_PATH_NOT_FOUND || dwLastError == ERROR_BAD_FORMAT)
-            {
-                // continue the run in this case 
-            }
-            else
+            if (!(dwLastError == ERROR_FILE_NOT_FOUND || dwLastError == ERROR_PATH_NOT_FOUND || dwLastError == ERROR_BAD_FORMAT))
             {
                 PrintWindowsError(GetLastError());
+                CloseHandle(EvilHandle);
                 free(TmpPath);
                 return FALSE;
             }
@@ -746,7 +379,7 @@ BOOL IsPathValid(LPCTSTR lpPath)
 
             CloseHandle(CurrentHandle);
             
-            // dwVolumeSerialNumber, nFileIndexHigh and nFileIndexLow together uniquely identify a file
+            // dwVolumeSerialNumber, nFileIndexHigh and nFileIndexLow together uniquely identify a file in a computer
             if (CurrentInfo.dwVolumeSerialNumber == EvilInfo.dwVolumeSerialNumber &&
                 CurrentInfo.nFileIndexHigh == EvilInfo.nFileIndexHigh &&
                 CurrentInfo.nFileIndexLow == EvilInfo.nFileIndexLow)

@@ -18,7 +18,6 @@
 */
 LPTSTR GetTimeString(VOID);
 
-
 /*
 * @brief Covert date into formated string
 *
@@ -27,7 +26,6 @@ LPTSTR GetTimeString(VOID);
 * @param [in] dt - the date to format
 */
 INT FormatDate(TCHAR* lpDate, DWORD BufferSize, LPSYSTEMTIME dt);
-
 
 /*
 * @brief Return the current date as a string

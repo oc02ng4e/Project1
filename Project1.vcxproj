@@ -129,13 +129,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="EnvVar.c" />
+    <ClCompile Include="FileSystem.c" />
     <ClCompile Include="main.c" />
+    <ClCompile Include="PathManipulations.c" />
     <ClCompile Include="Project1.c" />
     <ClCompile Include="Project1.h" />
     <ClCompile Include="Utils.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EnvVar.h" />
+    <ClInclude Include="FileSystem.h" />
+    <ClInclude Include="PathManipulations.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

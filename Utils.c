@@ -24,3 +24,31 @@ VOID PrintWindowsError(DWORD dwError)
 
     _tprintf_s(TEXT("%s\n"), buffer);
 }
+
+
+BOOL GetUserInput(LPTSTR lpUserInput, DWORD dwLength)
+{
+    if (lpUserInput == NULL || dwLength <= 1)
+    {
+        _tprintf(TEXT("invalid params\n"));
+        return FALSE;
+    }
+
+    // get rid of \n at the start of the buffer
+    do {
+        if (!_fgetts(lpUserInput, dwLength, stdin))
+        {
+            perror("failed to get user input");
+            return FALSE;
+        }
+    } while (lpUserInput[0] == TEXT('\n'));
+
+    // _fgetts places \n\0 at the end
+    DWORD UserInputLength = _tcslen(lpUserInput);
+    if (lpUserInput[UserInputLength - 1] == TEXT('\n'))
+    {
+        lpUserInput[UserInputLength - 1] = TEXT('\0');
+    }
+
+    return TRUE;
+}

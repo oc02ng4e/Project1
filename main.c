@@ -13,21 +13,17 @@
 
 int _tmain(int argc, wchar_t* argv[])
 {
-
     HINSTANCE hinstLib;
     UNICODE_STRING FFilePath = { 0 };
 
     hinstLib = LoadLibrary(TEXT("ntdll.dll"));
 
     // If the handle is valid, try to get the function address.
-
     if (hinstLib != NULL)
     {
         RtlDosPathNameToNtPathName_U_WithStatus = (DOS_TO_NT)GetProcAddress(hinstLib, "RtlDosPathNameToNtPathName_U_WithStatus");
 
-        // If the function address is valid, call the function.
-
-        if (NULL == RtlDosPathNameToNtPathName_U_WithStatus)
+        if (RtlDosPathNameToNtPathName_U_WithStatus == NULL)
         {
             _tprintf_s(TEXT("failed to load function\n"));
             return 0;
@@ -40,7 +36,6 @@ int _tmain(int argc, wchar_t* argv[])
     }
 
     TCHAR FilePath[MAX_SUPPORTED_PATH] = { TEXT('\0') };
-
     while (TRUE)
     {
         TCHAR FilePath[MAX_SUPPORTED_PATH] = { '\0' };
@@ -54,7 +49,7 @@ int _tmain(int argc, wchar_t* argv[])
                 break;
             }
         }
-
+        
         if (!GetFilePath(FilePath, MAX_SUPPORTED_PATH))
         {
             continue;

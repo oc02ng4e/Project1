@@ -285,21 +285,23 @@ too_long:
 
 BOOL ConvertEnvVariables(LPTSTR lpFileName, DWORD nMaxPathLength)
 {
+    // Find the Start of the first env variable
     LPTSTR StartOfVar = _tcschr(lpFileName, DELIM);
     if (StartOfVar == NULL)
     {
         return TRUE;
     }
 
+    // Skip to the start of its name
     StartOfVar++;
 
+    // Find the Start of the first env variable
     LPTSTR EndOfVar = _tcschr(StartOfVar, DELIM);
     if (EndOfVar == NULL)
     {
         return FALSE;
     }
 
-    DWORD dwPrevIndex = 0;
     LPTSTR TmpPath = malloc((nMaxPathLength) * sizeof(TCHAR));
     if (TmpPath == NULL)
     {
@@ -327,6 +329,7 @@ BOOL ConvertEnvVariables(LPTSTR lpFileName, DWORD nMaxPathLength)
     }
 
     DWORD dwRet, dwErr;
+    DWORD dwPrevIndex = 0;
 
     // run until there is only one %
     while (EndOfVar != NULL)
@@ -390,6 +393,7 @@ BOOL ConvertEnvVariables(LPTSTR lpFileName, DWORD nMaxPathLength)
         }
     }
 
+    // add the data after all the env variables
     if (dwPrevIndex != _tcsclen(lpFileName))
     {
         _tcscpy_s(&TmpPath[dwAmountWritten], nMaxPathLength - dwAmountWritten, &lpFileName[dwPrevIndex]);

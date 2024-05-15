@@ -30,12 +30,24 @@
     <ClCompile Include="Utils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PathManipulations.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FileSystem.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="EnvVar.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PathManipulations.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

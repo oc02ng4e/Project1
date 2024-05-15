@@ -7,6 +7,15 @@
 #define MAX_MESSAGE_SIZE  128
 #define MAX_SUPPORTED_PATH 32770 
 
+/**
+* @brief get input from the user
+*
+* @param [out] lpUserInput - buffer to put the input
+* @param [in] dwLength - the length of the buffer
+*
+* @note expects error from GetLastError
+*/
+BOOL GetUserInput(LPTSTR lpUserInput, DWORD dwLength);
 
 /**
 * @brief print the given windows error
@@ -16,4 +25,5 @@
 * @note expects error from GetLastError
 */
 VOID PrintWindowsError(DWORD dwError);
+
 #endif
