@@ -136,9 +136,9 @@ BOOL WriteUserInputToFile(LPCTSTR lpFilePath)
         return FALSE;
     }
     
-    if (IsDataExe(UserLine, MAX_LINE_SIZE))
+    if (IsDataExe(UserLine, amountRead))
     {
-        _tprintf_s(TEXT("trying write exe\n"));
+        _tprintf_s(TEXT("trying to write exe\n"));
          return FALSE;
     }
 
@@ -404,39 +404,6 @@ BOOL IsPathValid(LPCTSTR lpPath)
     return TRUE;
 }
 
-BOOL IsDataExe(LPCSTR lpBuffer, DWORD BufferLen)
-{
-    if (lpBuffer == NULL || BufferLen < sizeof(IMAGE_DOS_HEADER))
-    {
-        return FALSE;
-    }
-
-    IMAGE_DOS_HEADER* hdrDOS = (IMAGE_DOS_HEADER*)lpBuffer;
-    
-    // Dos executable
-    if (hdrDOS->e_lfanew == 0)
-    {
-        return TRUE;
-    }
-
-    if (BufferLen < hdrDOS->e_lfanew)
-    {
-        return FALSE;
-    }
-
-    if (IsNTFile)
-    {
-        return TRUE;
-    }
-
-    if (IsOS2File)
-    {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
 BOOL IsNTFile(LPCSTR lpBuffer, DWORD BufferLen)
 {
     if (lpBuffer == NULL || BufferLen < sizeof(IMAGE_DOS_HEADER))
@@ -503,3 +470,57 @@ BOOL IsOS2File(LPCSTR lpBuffer, DWORD BufferLen)
     return FALSE;
 
 }
+
+BOOL IsElfFile(LPCSTR lpBuffer, DWORD BufferLen)
+{
+    if (lpBuffer == NULL || BufferLen < sizeof(ELF_MAGIC))
+    {
+        return FALSE;
+    }
+
+    // Check if the content starts with the elf magic either in big or little endian
+    if (*(const uint32_t*)(lpBuffer) == ELF_MAGIC || *(const uint32_t*)(lpBuffer) == _byteswap_ulong(ELF_MAGIC))
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+
+}
+
+BOOL IsDataExe(LPCSTR lpBuffer, DWORD BufferLen)
+{
+    if (lpBuffer == NULL)
+    {
+        return FALSE;
+    }
+
+    if (BufferLen >= sizeof(IMAGE_DOS_HEADER))
+    {
+        IMAGE_DOS_HEADER* hdrDOS = (IMAGE_DOS_HEADER*)lpBuffer;
+
+        // Dos executable
+        if (hdrDOS->e_lfanew == 0)
+        {
+            return TRUE;
+        }
+
+        if (IsNTFile(lpBuffer, BufferLen))
+        {
+            return TRUE;
+        }
+
+        if (IsOS2File(lpBuffer, BufferLen))
+        {
+            return TRUE;
+        }
+    }
+
+    if (IsElfFile(lpBuffer, BufferLen))
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+

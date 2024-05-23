@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <tchar.h> 
+#include <stdint.h>
 
 #include "Utils.h"
 #include "PathManipulations.h"
@@ -17,6 +18,8 @@
 #define BAD_PATH TEXT("c:\\evilevilevil")
 
 #define USER_AGREEMENT TEXT('y')
+
+#define ELF_MAGIC 0x7F454c46
 
 /**
 * @brief Get from the user the desired file path and validate it
@@ -60,6 +63,36 @@ BOOL ValidHardLink(LPCTSTR lpPath);
 BOOL IsPathValid(LPCTSTR lpPath);
 
 
+/**
+* @brief check if the given file content is of an nt file
+*
+* @param [in] lpBuffer - the buffer to check
+* @param [in] BufferLen - the length of the given buffer
+*/
+BOOL IsNTFile(LPCSTR lpBuffer, DWORD BufferLen);
+
+/**
+* @brief check if the given file content is of an OS2 file
+*
+* @param [in] lpBuffer - the buffer to check
+* @param [in] BufferLen - the length of the given buffer
+*/
+BOOL IsOS2File(LPCSTR lpBuffer, DWORD BufferLen);
+
+/**
+* @brief check if the given file content is of an ELF file
+*
+* @param [in] lpBuffer - the buffer to check
+* @param [in] BufferLen - the length of the given buffer
+*/
+BOOL IsElfFile(LPCSTR lpBuffer, DWORD BufferLen);
+
+/**
+* @brief check if the given file content is of an executable
+*
+* @param [in] lpBuffer - the buffer to check
+* @param [in] BufferLen - the length of the given buffer
+*/
 BOOL IsDataExe(LPCSTR lpBuffer, DWORD BufferLen);
 
 #endif // !PROJECT_PROJECT
