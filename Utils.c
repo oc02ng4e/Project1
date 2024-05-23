@@ -25,7 +25,7 @@ VOID PrintWindowsError(DWORD dwError)
     _tprintf_s(TEXT("%s\n"), buffer);
 }
 
-BOOL GetUserInput(LPTSTR lpUserInput, DWORD dwLength)
+DWORD GetUserInput(LPTSTR lpUserInput, DWORD dwLength)
 {
     if (lpUserInput == NULL || dwLength <= 1)
     {
@@ -43,11 +43,17 @@ BOOL GetUserInput(LPTSTR lpUserInput, DWORD dwLength)
     } while (lpUserInput[0] == TEXT('\n'));
 
     // _fgetts places \n\0 at the end
-    DWORD UserInputLength = _tcslen(lpUserInput);
-    if (lpUserInput[UserInputLength - 1] == TEXT('\n'))
+    DWORD UserInputLength = 0;
+    while (lpUserInput[UserInputLength] != TEXT('\n'))
     {
-        lpUserInput[UserInputLength - 1] = TEXT('\0');
+        UserInputLength++;
+        if (UserInputLength >= dwLength)
+        {
+            return FALSE;
+        }
     }
 
-    return TRUE;
+    lpUserInput[UserInputLength] = TEXT('\0');
+
+    return UserInputLength;
 }

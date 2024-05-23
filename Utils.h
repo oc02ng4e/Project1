@@ -13,9 +13,10 @@
 * @param [out] lpUserInput - buffer to put the input
 * @param [in] dwLength - the length of the buffer
 *
+* @return the amount read or 0 if failed;
 * @note expects error from GetLastError
 */
-BOOL GetUserInput(LPTSTR lpUserInput, DWORD dwLength);
+DWORD GetUserInput(LPTSTR lpUserInput, DWORD dwLength);
 
 /**
 * @brief print the given windows error

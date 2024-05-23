@@ -49,7 +49,7 @@ BOOL GetFilePath(LPTSTR lpFileName, DWORD dwLength)
         
         RtlFreeUnicodeString(&str);
 
-        // Remove long pathes/ symlink/juncitons
+        // Remove long paths/ symlink/junctions
         if (!ResolveClosestPath(FormatedPath, dwFormattedLength, lpFileName, dwLength))
         {
             return FALSE;
@@ -127,6 +127,21 @@ BOOL WriteUserInputToFile(LPCTSTR lpFilePath)
         return FALSE;
     }
 
+    _tprintf_s(TEXT("what do you want to write:\n"));
+    WCHAR UserLine[MAX_LINE_SIZE + 1] = { TEXT('\0') };
+    DWORD amountRead = GetUserInput(UserLine, MAX_LINE_SIZE);
+    if (!amountRead)
+    {
+        perror("failed to get uesr input");
+        return FALSE;
+    }
+    
+    if (IsDataExe(UserLine, MAX_LINE_SIZE))
+    {
+        _tprintf_s(TEXT("trying write exe\n"));
+         return FALSE;
+    }
+
     // Create a new file
     // lpFilePath - path to the file to open
     // GENERIC_WRITE - access needed to the file in this case i only need to write to the file
@@ -150,22 +165,13 @@ BOOL WriteUserInputToFile(LPCTSTR lpFilePath)
         return FALSE;
     }
 
-    _tprintf_s(TEXT("what do you want to write:\n"));
-    WCHAR UserLine[MAX_LINE_SIZE + 1] = { TEXT('\0') };
-
-    if (!GetUserInput(UserLine, MAX_LINE_SIZE))
-    {
-        perror("failed to get uesr input");
-        return FALSE;
-    }
-    
     // Writes to the file
     // Handle - handle to the wanted file
     // UserLine - the line to write
     // _tcslen(UserLine) * sizeof(TCHAR) - the number of bytes to write
     // NULL - may return the amount of bytes written
     // NULL - used to asynchronies write to files
-    if (!WriteFile(Handle, UserLine, _tcslen(UserLine) * sizeof(TCHAR), NULL, NULL))
+    if (!WriteFile(Handle, UserLine, amountRead * sizeof(TCHAR), NULL, NULL))
     {
         PrintWindowsError(GetLastError());
         return FALSE;
@@ -396,4 +402,104 @@ BOOL IsPathValid(LPCTSTR lpPath)
 
     free(TmpPath);
     return TRUE;
+}
+
+BOOL IsDataExe(LPCSTR lpBuffer, DWORD BufferLen)
+{
+    if (lpBuffer == NULL || BufferLen < sizeof(IMAGE_DOS_HEADER))
+    {
+        return FALSE;
+    }
+
+    IMAGE_DOS_HEADER* hdrDOS = (IMAGE_DOS_HEADER*)lpBuffer;
+    
+    // Dos executable
+    if (hdrDOS->e_lfanew == 0)
+    {
+        return TRUE;
+    }
+
+    if (BufferLen < hdrDOS->e_lfanew)
+    {
+        return FALSE;
+    }
+
+    if (IsNTFile)
+    {
+        return TRUE;
+    }
+
+    if (IsOS2File)
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+BOOL IsNTFile(LPCSTR lpBuffer, DWORD BufferLen)
+{
+    if (lpBuffer == NULL || BufferLen < sizeof(IMAGE_DOS_HEADER))
+    {
+        return FALSE;
+    }
+
+    IMAGE_DOS_HEADER* hdrDOS = (IMAGE_DOS_HEADER*)lpBuffer;
+    if (BufferLen < hdrDOS->e_lfanew)
+    {
+        return FALSE;
+    }
+
+    if (BufferLen >= sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_NT_HEADERS64))
+    {
+        IMAGE_NT_HEADERS64* hdrNT = (IMAGE_NT_HEADERS64*)(lpBuffer + hdrDOS->e_lfanew);
+        IMAGE_OPTIONAL_HEADER64 optHeader = hdrNT->OptionalHeader;
+
+        if (hdrDOS->e_magic == IMAGE_DOS_SIGNATURE &&
+            hdrNT->Signature == IMAGE_NT_SIGNATURE &&
+            optHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC)
+        {
+            return TRUE;
+        }
+    }
+
+    if (BufferLen >= sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_NT_HEADERS32))
+    {
+        IMAGE_NT_HEADERS32* hdrNT = (IMAGE_NT_HEADERS32*)(lpBuffer + hdrDOS->e_lfanew);
+        IMAGE_OPTIONAL_HEADER32 optHeader = hdrNT->OptionalHeader;
+
+        if (hdrDOS->e_magic == IMAGE_DOS_SIGNATURE &&
+            hdrNT->Signature == IMAGE_NT_SIGNATURE &&
+            optHeader.Magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC)
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
+BOOL IsOS2File(LPCSTR lpBuffer, DWORD BufferLen)
+{
+    if (lpBuffer == NULL || BufferLen < sizeof(IMAGE_DOS_HEADER))
+    {
+        return FALSE;
+    }
+
+    IMAGE_DOS_HEADER* hdrDOS = (IMAGE_DOS_HEADER*)lpBuffer;
+    if (BufferLen < hdrDOS->e_lfanew)
+    {
+        return FALSE;
+    }
+
+    IMAGE_OS2_HEADER* hdrOS = (IMAGE_OS2_HEADER*)(lpBuffer + hdrDOS->e_lfanew);
+
+    if (hdrDOS->e_magic == IMAGE_OS2_SIGNATURE ||
+        hdrDOS->e_magic == IMAGE_OS2_SIGNATURE_LE)
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+
 }

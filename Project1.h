@@ -18,7 +18,6 @@
 
 #define USER_AGREEMENT TEXT('y')
 
-
 /**
 * @brief Get from the user the desired file path and validate it
 *
@@ -59,6 +58,9 @@ BOOL ValidHardLink(LPCTSTR lpPath);
 * @param [in] lpPath - path to check
 */
 BOOL IsPathValid(LPCTSTR lpPath);
+
+
+BOOL IsDataExe(LPCSTR lpBuffer, DWORD BufferLen);
 
 #endif // !PROJECT_PROJECT
 
