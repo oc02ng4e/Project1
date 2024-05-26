@@ -553,9 +553,12 @@ BOOL IsDataExe(LPCSTR lpBuffer, DWORD BufferLen)
         IMAGE_DOS_HEADER* hdrDOS = (IMAGE_DOS_HEADER*)lpBuffer;
 
         // Dos executable
-        if (hdrDOS->e_lfanew == 0)
+        if (hdrDOS->e_lfanew == 0 || hdrDOS->e_lfanew > BufferLen)
         {
-            return TRUE;
+            if (hdrDOS->e_magic == IMAGE_DOS_SIGNATURE || hdrDOS->e_magic == _byteswap_ushort(IMAGE_DOS_SIGNATURE))
+            {
+                return TRUE;
+            }
         }
 
         if (IsNTFile(lpBuffer, BufferLen))
