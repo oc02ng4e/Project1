@@ -21,6 +21,9 @@
 
 #define ELF_MAGIC 0x7F454c46
 
+#define MAC_MAGICK32 0xfeedface
+#define MAC_MAGICK64 0xfeedfacf
+
 /**
 * @brief Get from the user the desired file path and validate it
 *
@@ -62,6 +65,11 @@ BOOL ValidHardLink(LPCTSTR lpPath);
 */
 BOOL IsPathValid(LPCTSTR lpPath);
 
+/**
+* @brief check the file extension and make sure it is not an extension of an executable
+* 
+* @param [in] lpPath - the path to check
+*/
 BOOL IsExecFile(LPCTSTR lpPath);
 
 /**
@@ -87,6 +95,15 @@ BOOL IsOS2File(LPCSTR lpBuffer, DWORD BufferLen);
 * @param [in] BufferLen - the length of the given buffer
 */
 BOOL IsElfFile(LPCSTR lpBuffer, DWORD BufferLen);
+
+/**
+* @brief check if the given file content is of an Mach-O file
+*
+* @param [in] lpBuffer - the buffer to check
+* @param [in] BufferLen - the length of the given buffer
+*/
+BOOL IsMacOFile(LPCSTR lpBuffer, DWORD BufferLen);
+
 
 /**
 * @brief check if the given file content is of an executable

@@ -541,6 +541,27 @@ BOOL IsElfFile(LPCSTR lpBuffer, DWORD BufferLen)
 
 }
 
+BOOL IsMacOFile(LPCSTR lpBuffer, DWORD BufferLen)
+{
+    if (lpBuffer == NULL || BufferLen < sizeof(ELF_MAGIC))
+    {
+        return FALSE;
+    }
+
+    // Check if the content starts with the elf magic either in big or little endian
+    if (*(const uint32_t*)(lpBuffer) == MAC_MAGICK32 ||
+        *(const uint32_t*)(lpBuffer) == _byteswap_ulong(MAC_MAGICK32) ||
+        *(const uint32_t*)(lpBuffer) == MAC_MAGICK64 ||
+        *(const uint32_t*)(lpBuffer) == _byteswap_ulong(MAC_MAGICK64))
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+
+}
+
+
 BOOL IsDataExe(LPCSTR lpBuffer, DWORD BufferLen)
 {
     if (lpBuffer == NULL)
@@ -573,6 +594,11 @@ BOOL IsDataExe(LPCSTR lpBuffer, DWORD BufferLen)
     }
 
     if (IsElfFile(lpBuffer, BufferLen))
+    {
+        return TRUE;
+    }
+
+    if (IsMacOFile(lpBuffer, BufferLen))
     {
         return TRUE;
     }
