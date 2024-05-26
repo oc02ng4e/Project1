@@ -302,6 +302,12 @@ BOOL IsPathValid(LPCTSTR lpPath)
         return FALSE;
     }
 
+    if (IsExecFile(lpPath))
+    {
+        _tprintf_s(TEXT("invalid file format\n"));
+        return FALSE;
+    }
+
     HANDLE EvilHandle = CreateFile(BAD_PATH,
         GENERIC_READ,
         FILE_SHARE_READ,
@@ -404,6 +410,43 @@ BOOL IsPathValid(LPCTSTR lpPath)
     return TRUE;
 }
 
+BOOL IsExecFile(LPCTSTR lpPath)
+{
+    if (lpPath == NULL)
+    {
+        return FALSE;
+    }
+
+    LPCTSTR lpExtentntion = PathFindExtension(lpPath);
+    
+    DWORD dwLengthToCheck;
+    LPCTSTR EndOfExtention = _tcschr(lpExtentntion, TEXT(':'));
+    if (EndOfExtention != NULL)
+    {
+        dwLengthToCheck = EndOfExtention - lpExtentntion;
+    }
+    else {
+        dwLengthToCheck = _tcslen(lpExtentntion);
+    }
+
+    if (_tcsncmp(lpExtentntion, TEXT(".com"), dwLengthToCheck) == 0)
+    {
+        return TRUE;
+    }
+
+    if (_tcsncmp(lpExtentntion, TEXT(".exe"), dwLengthToCheck) == 0)
+    {
+        return TRUE;
+    }
+
+    if (_tcsncmp(lpExtentntion, TEXT(".pif"), dwLengthToCheck) == 0)
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 BOOL IsNTFile(LPCSTR lpBuffer, DWORD BufferLen)
 {
     if (lpBuffer == NULL || BufferLen < sizeof(IMAGE_DOS_HEADER))
@@ -417,27 +460,37 @@ BOOL IsNTFile(LPCSTR lpBuffer, DWORD BufferLen)
         return FALSE;
     }
 
-    if (BufferLen >= sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_NT_HEADERS64))
+    // sizeof the IMAGE_DOS_HEADER, IMAGE_NT_HEADERS64 without the full size of the optional header + the size of the magic in the optional header
+    if (BufferLen >= sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_NT_HEADERS64) - sizeof(IMAGE_OPTIONAL_HEADER32) + sizeof(WORD))
     {
         IMAGE_NT_HEADERS64* hdrNT = (IMAGE_NT_HEADERS64*)(lpBuffer + hdrDOS->e_lfanew);
         IMAGE_OPTIONAL_HEADER64 optHeader = hdrNT->OptionalHeader;
+        IMAGE_FILE_HEADER fileHeader = hdrNT->FileHeader;
 
+        // Checks the relevant magic, if the file is an executable and make sure it is not a dll
         if (hdrDOS->e_magic == IMAGE_DOS_SIGNATURE &&
             hdrNT->Signature == IMAGE_NT_SIGNATURE &&
-            optHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC)
+            optHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC &&
+            fileHeader.Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE &&
+            !(fileHeader.Characteristics & IMAGE_FILE_DLL))
         {
             return TRUE;
         }
     }
 
-    if (BufferLen >= sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_NT_HEADERS32))
+    // sizeof the IMAGE_DOS_HEADER, IMAGE_NT_HEADERS32 without the full size of the optional header + the size of the magic in the optional header
+    if (BufferLen >= sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_NT_HEADERS32) - sizeof(IMAGE_OPTIONAL_HEADER32) + sizeof(WORD))
     {
         IMAGE_NT_HEADERS32* hdrNT = (IMAGE_NT_HEADERS32*)(lpBuffer + hdrDOS->e_lfanew);
         IMAGE_OPTIONAL_HEADER32 optHeader = hdrNT->OptionalHeader;
+        IMAGE_FILE_HEADER fileHeader = hdrNT->FileHeader;
 
+        // Checks the relevant magic, if the file is an executable and make sure it is not a dll
         if (hdrDOS->e_magic == IMAGE_DOS_SIGNATURE &&
             hdrNT->Signature == IMAGE_NT_SIGNATURE &&
-            optHeader.Magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC)
+            optHeader.Magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC &&
+            fileHeader.Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE &&
+            !(fileHeader.Characteristics & IMAGE_FILE_DLL))
         {
             return TRUE;
         }

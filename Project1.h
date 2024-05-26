@@ -62,6 +62,7 @@ BOOL ValidHardLink(LPCTSTR lpPath);
 */
 BOOL IsPathValid(LPCTSTR lpPath);
 
+BOOL IsExecFile(LPCTSTR lpPath);
 
 /**
 * @brief check if the given file content is of an nt file
