@@ -444,6 +444,11 @@ BOOL IsExecFile(LPCTSTR lpPath)
         return TRUE;
     }
 
+    if (_tcsncmp(lpExtentntion, TEXT(".386"), dwLengthToCheck) == 0)
+    {
+        return TRUE;
+    }
+
     return FALSE;
 }
 
@@ -560,7 +565,6 @@ BOOL IsMacOFile(LPCSTR lpBuffer, DWORD BufferLen)
     return FALSE;
 
 }
-
 
 BOOL IsDataExe(LPCSTR lpBuffer, DWORD BufferLen)
 {
