@@ -1,7 +1,7 @@
 #include "ContentValidation.h"
 
 
-BOOL IsNTFile(LPCSTR lpBuffer, DWORD BufferLen)
+BOOL IsNTFile(LPCSTR lpBuffer, DWORD BufferLen, BOOL* IsExe)
 {
     if (lpBuffer == NULL || BufferLen < sizeof(IMAGE_DOS_HEADER))
     {
@@ -25,9 +25,9 @@ BOOL IsNTFile(LPCSTR lpBuffer, DWORD BufferLen)
         if (hdrDOS->e_magic == IMAGE_DOS_SIGNATURE &&
             hdrNT->Signature == IMAGE_NT_SIGNATURE &&
             optHeader.Magic == IMAGE_NT_OPTIONAL_HDR64_MAGIC &&
-            fileHeader.Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE &&
-            !(fileHeader.Characteristics & IMAGE_FILE_DLL))
+            fileHeader.Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE)
         {
+            *IsExe = !(fileHeader.Characteristics & IMAGE_FILE_DLL);
             return TRUE;
         }
     }
@@ -43,9 +43,9 @@ BOOL IsNTFile(LPCSTR lpBuffer, DWORD BufferLen)
         if (hdrDOS->e_magic == IMAGE_DOS_SIGNATURE &&
             hdrNT->Signature == IMAGE_NT_SIGNATURE &&
             optHeader.Magic == IMAGE_NT_OPTIONAL_HDR32_MAGIC &&
-            fileHeader.Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE &&
-            !(fileHeader.Characteristics & IMAGE_FILE_DLL))
+            fileHeader.Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE)
         {
+            *IsExe = !(fileHeader.Characteristics & IMAGE_FILE_DLL);
             return TRUE;
         }
     }
@@ -122,25 +122,27 @@ BOOL IsDataExe(LPCSTR lpBuffer, DWORD BufferLen)
         return FALSE;
     }
 
+    // Check new format of dos executables
     if (BufferLen >= sizeof(IMAGE_DOS_HEADER))
     {
         IMAGE_DOS_HEADER* hdrDOS = (IMAGE_DOS_HEADER*)lpBuffer;
-
-        // Dos executable
-        if (hdrDOS->e_lfanew == 0 || hdrDOS->e_lfanew > BufferLen)
+        BOOL IsExe;
+        if (IsNTFile(lpBuffer, BufferLen, &IsExe))
         {
-            if (hdrDOS->e_magic == IMAGE_DOS_SIGNATURE || hdrDOS->e_magic == _byteswap_ushort(IMAGE_DOS_SIGNATURE))
-            {
-                return TRUE;
-            }
-        }
-
-        if (IsNTFile(lpBuffer, BufferLen))
-        {
-            return TRUE;
+            return IsExe;
         }
 
         if (IsOS2File(lpBuffer, BufferLen))
+        {
+            return TRUE;
+        }
+    }
+
+    // If its not from the new format check if its from the old
+    if (BufferLen >= sizeof(OLD_DOS_HEADER))
+    {
+        OLD_DOS_HEADER* hdrDOS = (OLD_DOS_HEADER*)lpBuffer;
+        if (hdrDOS->e_magic == IMAGE_DOS_SIGNATURE || hdrDOS->e_magic == _byteswap_ushort(IMAGE_DOS_SIGNATURE))
         {
             return TRUE;
         }
@@ -158,4 +160,5 @@ BOOL IsDataExe(LPCSTR lpBuffer, DWORD BufferLen)
 
     return FALSE;
 }
+
 
