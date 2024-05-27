@@ -69,7 +69,8 @@ BOOL IsOS2File(LPCSTR lpBuffer, DWORD BufferLen)
     IMAGE_OS2_HEADER* hdrOS = (IMAGE_OS2_HEADER*)(lpBuffer + hdrDOS->e_lfanew);
 
     if (hdrDOS->e_magic == IMAGE_OS2_SIGNATURE ||
-        hdrDOS->e_magic == IMAGE_OS2_SIGNATURE_LE)
+        hdrDOS->e_magic == IMAGE_OS2_SIGNATURE_LE ||
+        hdrDOS->e_magic == IMAGE_SIGNATURE_LX)
     {
         return TRUE;
     }

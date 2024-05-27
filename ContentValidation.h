@@ -3,11 +3,12 @@
 #include <Windows.h>
 #include <stdint.h>
 
+#define IMAGE_SIGNATURE_LX 0x584C  
+
 #define ELF_MAGIC 0x7F454c46
 
 #define MAC_MAGICK32 0xfeedface
 #define MAC_MAGICK64 0xfeedfacf
-
 typedef struct _OLD_DOS_HEADER {
     WORD   e_magic;                     // Magic number
     WORD   e_cblp;                      // Bytes on last page of file
