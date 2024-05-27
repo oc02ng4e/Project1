@@ -12,17 +12,13 @@
 #include "Utils.h"
 #include "PathManipulations.h"
 #include "FileSystem.h"
+#include "ContentValidation.h"
 
 #define MAX_LINE_SIZE 512
 
 #define BAD_PATH TEXT("c:\\evilevilevil")
 
 #define USER_AGREEMENT TEXT('y')
-
-#define ELF_MAGIC 0x7F454c46
-
-#define MAC_MAGICK32 0xfeedface
-#define MAC_MAGICK64 0xfeedfacf
 
 /**
 * @brief Get from the user the desired file path and validate it
@@ -71,47 +67,5 @@ BOOL IsPathValid(LPCTSTR lpPath);
 * @param [in] lpPath - the path to check
 */
 BOOL IsExecFile(LPCTSTR lpPath);
-
-/**
-* @brief check if the given file content is of an nt file
-*
-* @param [in] lpBuffer - the buffer to check
-* @param [in] BufferLen - the length of the given buffer
-*/
-BOOL IsNTFile(LPCSTR lpBuffer, DWORD BufferLen);
-
-/**
-* @brief check if the given file content is of an OS2 file
-*
-* @param [in] lpBuffer - the buffer to check
-* @param [in] BufferLen - the length of the given buffer
-*/
-BOOL IsOS2File(LPCSTR lpBuffer, DWORD BufferLen);
-
-/**
-* @brief check if the given file content is of an ELF file
-*
-* @param [in] lpBuffer - the buffer to check
-* @param [in] BufferLen - the length of the given buffer
-*/
-BOOL IsElfFile(LPCSTR lpBuffer, DWORD BufferLen);
-
-/**
-* @brief check if the given file content is of an Mach-O file
-*
-* @param [in] lpBuffer - the buffer to check
-* @param [in] BufferLen - the length of the given buffer
-*/
-BOOL IsMacOFile(LPCSTR lpBuffer, DWORD BufferLen);
-
-
-/**
-* @brief check if the given file content is of an executable
-*
-* @param [in] lpBuffer - the buffer to check
-* @param [in] BufferLen - the length of the given buffer
-*/
-BOOL IsDataExe(LPCSTR lpBuffer, DWORD BufferLen);
-
 #endif // !PROJECT_PROJECT
 
