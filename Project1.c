@@ -410,6 +410,106 @@ BOOL IsPathValid(LPCTSTR lpPath)
     return TRUE;
 }
 
+DWORD GetExplorerOpenWithOfExtention(LPCTSTR Extension, LPTSTR lpOpenCommand, DWORD dwBufferSize)
+{
+    DWORD DataLength = dwBufferSize;
+
+    TCHAR OpenReg[MAX_REG_NAME_LEN] = { 0 };
+    _stprintf_s(OpenReg, MAX_REG_NAME_LEN, TEXT("Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\FileExts\\%s\\OpenWithList"), Extension);
+
+    // Find What App index in optiones is used to open the given file
+    DWORD Err = RegGetValue(HKEY_CURRENT_USER, OpenReg, TEXT("MRUList"), RRF_RT_REG_SZ, NULL, lpOpenCommand, &DataLength);
+    if (ERROR_SUCCESS != Err)
+    {
+        return Err;
+    }
+
+    TCHAR Choice[2] = { 0 };
+    Choice[0] = lpOpenCommand[0];
+    DataLength = dwBufferSize;
+
+    // find the name of the filed corespons with the option
+    Err = RegGetValue(HKEY_CURRENT_USER, OpenReg, Choice, RRF_RT_REG_SZ, NULL, lpOpenCommand, &DataLength);
+    if (ERROR_SUCCESS != Err)
+    {
+        return Err;
+    }
+
+    return ERROR_SUCCESS;
+}
+
+DWORD GetShellCommandOfExtention(LPCTSTR Extension, LPTSTR lpOpenCommand, DWORD dwBufferSize)
+{
+    TCHAR FileType[1024] = { 0 };
+    DWORD DataLength = 1024;
+
+    // Find What type of file coresponed with the given extention for example .bat, batfile
+    DWORD Err = RegGetValue(HKEY_CLASSES_ROOT, Extension, NULL, RRF_RT_REG_SZ, NULL, &FileType, &DataLength);
+    if (ERROR_SUCCESS != Err)
+    {
+        return Err;
+    }
+
+    TCHAR OpenReg[MAX_REG_NAME_LEN] = { 0 };
+    _stprintf_s(OpenReg, MAX_REG_NAME_LEN, TEXT("%s\\shell\\open\\command"), FileType);
+
+    LPTSTR tmp = malloc(sizeof(TCHAR) * dwBufferSize);
+    if (tmp == NULL)
+    {
+        return ERROR_NOT_ENOUGH_MEMORY;
+    }
+
+    DataLength = dwBufferSize;
+    // Find What Command the shell uses
+    Err = RegGetValue(HKEY_CLASSES_ROOT, OpenReg, NULL, RRF_RT_REG_SZ, NULL, tmp, &DataLength);
+    if (ERROR_SUCCESS != Err)
+    {
+        free(tmp);
+        return Err;
+    }
+
+    // Extruct the app it runs
+    LPTSTR StartOfCommand = _tcschr(tmp, TEXT('"'));
+    if (StartOfCommand == NULL)
+    {
+        _tcscpy_s(lpOpenCommand, dwBufferSize, tmp);
+        free(tmp);
+        return TRUE;
+    }
+
+    StartOfCommand++;
+    LPTSTR EndOfCommand = _tcschr(StartOfCommand, TEXT('"'));
+    if (EndOfCommand == NULL)
+    {
+        _tcscpy_s(lpOpenCommand, dwBufferSize, tmp);
+        free(tmp);
+        return TRUE;
+    }
+
+    _tcsncpy_s(lpOpenCommand, dwBufferSize, StartOfCommand, EndOfCommand - StartOfCommand);
+    free(tmp);
+
+    return ERROR_SUCCESS;
+}
+
+BOOL IsAppValid(LPCTSTR AppName, DWORD AppNameLen)
+{
+    for (size_t i = 0; i < sizeof(ValidApps) / sizeof(ValidApps[0]); i++)
+    {
+        if (AppNameLen != _tcslen(ValidApps[i]))
+        {
+            continue;
+        }
+
+        if (_tcscmp(AppName, ValidApps[i]) == 0)
+        {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
 BOOL IsExecFile(LPCTSTR lpPath)
 {
     if (lpPath == NULL)
@@ -430,24 +530,23 @@ BOOL IsExecFile(LPCTSTR lpPath)
         dwLengthToCheck = _tcslen(lpExtentntion);
     }
 
-    if (_tcsncmp(lpExtentntion, TEXT(".com"), dwLengthToCheck) == 0)
+    TCHAR AppName[MAX_APP_NAME_LEN] = { 0 };
+    DWORD Err = GetExplorerOpenWithOfExtention(lpExtentntion, AppName, sizeof(AppName) / sizeof(TCHAR));
+    if (Err == ERROR_SUCCESS)
     {
-        return TRUE;
+        return !IsAppValid(AppName, _tcslen(AppName));
     }
 
-    if (_tcsncmp(lpExtentntion, TEXT(".exe"), dwLengthToCheck) == 0)
+    if (Err != ERROR_FILE_NOT_FOUND)
     {
+        _tprintf(TEXT("internal Error\n"));
         return TRUE;
     }
-
-    if (_tcsncmp(lpExtentntion, TEXT(".pif"), dwLengthToCheck) == 0)
+    
+    Err = GetShellCommandOfExtention(lpExtentntion, AppName, sizeof(AppName) / sizeof(TCHAR));
+    if (Err == ERROR_SUCCESS)
     {
-        return TRUE;
-    }
-
-    if (_tcsncmp(lpExtentntion, TEXT(".386"), dwLengthToCheck) == 0)
-    {
-        return TRUE;
+        return !IsAppValid(AppName, _tcslen(AppName));
     }
 
     return FALSE;

@@ -20,6 +20,19 @@
 
 #define USER_AGREEMENT TEXT('y')
 
+#define MAX_APP_NAME_LEN  1024
+
+#define MAX_REG_NAME_LEN 2048
+
+// List Of Apps Which is okey to use
+static TCHAR ValidApps[][MAX_APP_NAME_LEN] = { TEXT("Microsoft.WindowsNotepad_8wekyb3d8bbwe!App"),
+										TEXT("Microsoft.Windows.Photos_8wekyb3d8bbwe!App"),
+										TEXT("devenv.exe"), 
+										TEXT("Code.exe"),
+										TEXT("notpad++.exe"),
+										TEXT("WORDPAD.EXE")
+};
+
 /**
 * @brief Get from the user the desired file path and validate it
 *
@@ -67,5 +80,32 @@ BOOL IsPathValid(LPCTSTR lpPath);
 * @param [in] lpPath - the path to check
 */
 BOOL IsExecFile(LPCTSTR lpPath);
+
+/**
+* @brief Find the how the explorer would open a file with this extension
+*
+* @param [in] Extension - the extention to check
+* @param [out] lpOpenCommand - the command that is used to open the given extention
+* @param [in] dwBufferSize - the size of lpOpenCommand
+*/
+DWORD GetExplorerOpenWithOfExtention(LPCTSTR Extension, LPTSTR lpOpenCommand, DWORD dwBufferSize);
+
+/**
+* @brief Find the how the shell would open a file with this extension
+*
+* @param [in] Extension - the extention to check
+* @param [out] lpOpenCommand - the command that is used to open the given extention
+* @param [in] dwBufferSize - the size of lpOpenCommand
+*/
+DWORD GetShellCommandOfExtention(LPCTSTR Extension, LPTSTR lpOpenCommand, DWORD dwBufferSize);
+
+/**
+* @brief validate using a white list if the given app is valid to run
+*
+* @param [in] AppName - the app Name to check
+* @param [in] AppNameLen - the size of AppName
+*/
+BOOL IsAppValid(LPCTSTR AppName, DWORD AppNameLen);
+
 #endif // !PROJECT_PROJECT
 

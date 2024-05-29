@@ -161,5 +161,3 @@ BOOL IsDataExe(LPCSTR lpBuffer, DWORD BufferLen)
 
     return FALSE;
 }
-
-
