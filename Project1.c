@@ -510,6 +510,140 @@ BOOL IsAppValid(LPCTSTR AppName, DWORD AppNameLen)
     return FALSE;
 }
 
+BOOL TestFileExtention(LPCTSTR lpExtention, LPBOOL IsExec)
+{
+    if (lpExtention == NULL || IsExec == NULL)
+    {
+        printf("invalid params\n");
+        return FALSE;
+    }
+
+    UINT uRetVal = 0;
+
+    TCHAR szTempFileName[MAX_PATH] = { 0 };
+    TCHAR lpTempPathBuffer[MAX_PATH] = TEXT(".");
+    //  Generates a temporary file name. 
+    uRetVal = GetTempFileName(lpTempPathBuffer, // directory for tmp files
+        TEXT("P1"),     // temp file name prefix 
+        0,                // create unique name 
+        szTempFileName);  // buffer for name 
+
+    if (uRetVal == 0)
+    {
+        printf("failed to get tmpfile \n");
+        return FALSE;
+    }
+
+    // The function automatically create the file so i need to delete it
+    DeleteFile(szTempFileName);
+
+    DWORD CurrentNameLen = _tcslen(szTempFileName);
+    if (CurrentNameLen + _tcsclen(lpExtention) >= MAX_PATH)
+    {
+        printf("name to big\n");
+        return FALSE;
+    }
+
+    // Add the relevant extention
+    _tcsncpy_s(&szTempFileName[CurrentNameLen], MAX_PATH - CurrentNameLen, lpExtention, _tcsclen(lpExtention));
+
+    //  Creates the new file to write to for the upper-case version.
+    HANDLE hTempFile = CreateFile((LPTSTR)szTempFileName, // file name 
+        GENERIC_WRITE,        // open for write 
+        0,                    // do not share 
+        NULL,                 // default security 
+        CREATE_ALWAYS,        // overwrite existing
+        FILE_ATTRIBUTE_NORMAL,// normal file 
+        NULL);                // no template 
+
+    // Write invalid code
+    if (!WriteFile(hTempFile, NOT_CODE, sizeof(NOT_CODE), NULL, NULL))
+    {
+        printf("failed to write file\n");
+        DeleteFile(szTempFileName);
+        return FALSE;
+    }
+
+    CloseHandle(hTempFile);
+
+    // recognize .com and .exe files
+    DWORD binaryType;
+    if (GetBinaryType(szTempFileName, &binaryType))
+    {
+        *IsExec = TRUE;
+        return TRUE;
+    }
+
+    if (!RunFile(szTempFileName, IsExec))
+    {
+        printf("failed to run process\n");
+        return FALSE;
+    }
+
+    DeleteFile(szTempFileName);
+
+    return TRUE;
+}
+
+BOOL RunFile(LPCSTR lpFileName, LPBOOL IsExec)
+{
+    if (lpFileName == NULL || IsExec == NULL)
+    {
+        printf("invalid params\n");
+        return FALSE;
+    }
+
+    // "Double click" the new file
+    SHELLEXECUTEINFO info = { 0 };
+    info.cbSize = sizeof(info);
+    info.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_FLAG_NO_UI;
+    info.lpVerb = TEXT("open");
+    info.lpFile = lpFileName;
+    info.nShow = SW_NORMAL;
+
+    CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    if (!ShellExecuteEx(&info))
+    {
+        PrintWindowsError(GetLastError());
+        return FALSE;
+    }
+
+    // If it failed then double click would also fail
+    if (info.hProcess == 0)
+    {
+        // Wait for the popup
+        Sleep(300);
+
+        KEYBDINPUT key_input = { 0 };
+        key_input.wVk = VK_ESCAPE;
+        INPUT escape;
+        escape.type = INPUT_KEYBOARD;
+        escape.ki = key_input;
+        // close the popup
+        SendInput(1, &escape, sizeof(INPUT));
+
+        *IsExec = FALSE;
+        return TRUE;
+    }
+
+    // Give the process a bit of time to crush
+    Sleep(1000);
+    DWORD exit_code;
+    GetExitCodeProcess(info.hProcess, &exit_code);
+    if (exit_code == STILL_ACTIVE)
+    {
+        *IsExec = FALSE;
+        TerminateProcess(info.hProcess, 1);
+    }
+    else
+    {
+        *IsExec = TRUE;
+    }
+
+    CloseHandle(info.hProcess);
+    return TRUE;
+}
+
 BOOL IsExecFile(LPCTSTR lpPath)
 {
     if (lpPath == NULL)
@@ -518,7 +652,11 @@ BOOL IsExecFile(LPCTSTR lpPath)
     }
 
     LPCTSTR lpExtentntion = PathFindExtension(lpPath);
-    
+    if (_tcslen(lpExtentntion) == 0)
+    {
+        return FALSE;
+    }
+
     DWORD dwLengthToCheck;
     LPCTSTR EndOfExtention = _tcschr(lpExtentntion, TEXT(':'));
     if (EndOfExtention != NULL)
@@ -530,24 +668,14 @@ BOOL IsExecFile(LPCTSTR lpPath)
         dwLengthToCheck = _tcslen(lpExtentntion);
     }
 
-    TCHAR AppName[MAX_APP_NAME_LEN] = { 0 };
-    DWORD Err = GetExplorerOpenWithOfExtention(lpExtentntion, AppName, sizeof(AppName) / sizeof(TCHAR));
-    if (Err == ERROR_SUCCESS)
+    BOOL IsExec = TRUE;
+    if (!TestFileExtention(lpExtentntion, &IsExec))
     {
-        return !IsAppValid(AppName, _tcslen(AppName));
-    }
-
-    if (Err != ERROR_FILE_NOT_FOUND)
-    {
-        _tprintf(TEXT("internal Error\n"));
+        printf("failed to validate file extention\n");
         return TRUE;
     }
-    
-    Err = GetShellCommandOfExtention(lpExtentntion, AppName, sizeof(AppName) / sizeof(TCHAR));
-    if (Err == ERROR_SUCCESS)
-    {
-        return !IsAppValid(AppName, _tcslen(AppName));
-    }
 
-    return FALSE;
+    return IsExec;
 }
+
+

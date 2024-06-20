@@ -24,12 +24,14 @@
 
 #define MAX_REG_NAME_LEN 2048
 
+#define NOT_CODE TEXT("aaaaa????")
+
 // List Of Apps Which is okey to use
 static TCHAR ValidApps[][MAX_APP_NAME_LEN] = { TEXT("Microsoft.WindowsNotepad_8wekyb3d8bbwe!App"),
 										TEXT("Microsoft.Windows.Photos_8wekyb3d8bbwe!App"),
 										TEXT("devenv.exe"), 
 										TEXT("Code.exe"),
-										TEXT("notpad++.exe"),
+										TEXT("notepad++.exe"),
 										TEXT("WORDPAD.EXE")
 };
 
@@ -74,6 +76,24 @@ BOOL ValidHardLink(LPCTSTR lpPath);
 */
 BOOL IsPathValid(LPCTSTR lpPath);
 
+
+/**
+* @brief Test if the current file extention is related to files which run code
+* 
+* @param lpExtention - the extention to check
+* @param IsExec - says if the extention related to executable files
+*/
+BOOL TestFileExtention(LPCTSTR lpExtention, LPBOOL IsExec);
+
+/**
+* @brief Try to run the given file and determent if it is suppose to be an exe file
+* 
+* @param lpFileName - the file to run
+* @param IsExec - says if the file is an  executable 
+* 
+*/
+BOOL RunFile(LPCSTR lpFileName, LPBOOL IsExec);
+
 /**
 * @brief check the file extension and make sure it is not an extension of an executable
 * 
@@ -106,6 +126,8 @@ DWORD GetShellCommandOfExtention(LPCTSTR Extension, LPTSTR lpOpenCommand, DWORD 
 * @param [in] AppNameLen - the size of AppName
 */
 BOOL IsAppValid(LPCTSTR AppName, DWORD AppNameLen);
+
+
 
 #endif // !PROJECT_PROJECT
 
